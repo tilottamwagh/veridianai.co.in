@@ -28,8 +28,8 @@ export function ChatbotWidget() {
   }
 
   React.useEffect(() => {
-    if (mode === "chat") scrollToBottom()
-  }, [messages, isTyping, mode])
+    scrollToBottom()
+  }, [messages, isTyping, mode, voiceTranscript])
 
   React.useEffect(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -44,8 +44,10 @@ export function ChatbotWidget() {
         ) || voices.find(v => v.lang.startsWith("en-")) || voices[0]
         setSynthVoice(femaleVoice || null)
       }
+      // Safari needs timeouts because getVoices is async initially
       loadVoices()
       window.speechSynthesis.onvoiceschanged = loadVoices
+      setTimeout(loadVoices, 1000)
     }
   }, [])
 
@@ -54,7 +56,7 @@ export function ChatbotWidget() {
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
     if (synthVoice) utterance.voice = synthVoice
-    utterance.pitch = 1.15 // Slightly higher pitch for female sweetness
+    utterance.pitch = 1.15
     utterance.rate = 1.05
     window.speechSynthesis.speak(utterance)
   }
@@ -80,12 +82,9 @@ export function ChatbotWidget() {
     return "I understand. To give you the most accurate technical information, could you elaborate on your team's specific requirements?"
   }
 
-  const handleSendText = () => {
-    if (!inputValue.trim()) return
-    const userMsg = inputValue.trim()
-    setMessages(prev => [...prev, { role: "user", text: userMsg }])
-    setInputValue("")
+  const processUserMessage = (userMsg: string, isVoice: boolean) => {
     setIsTyping(true)
+    if (isVoice) setIsVoiceProcessing(true)
 
     // Simulate AI response logic
     setTimeout(() => {
@@ -111,7 +110,20 @@ export function ChatbotWidget() {
 
       setMessages(prev => [...prev, { role: "bot", text: botResponse }])
       setIsTyping(false)
+      
+      if (isVoice) {
+         speak(botResponse)
+         setIsVoiceProcessing(false)
+      }
     }, 1000)
+  }
+
+  const handleSendText = () => {
+    if (!inputValue.trim()) return
+    const userMsg = inputValue.trim()
+    setMessages(prev => [...prev, { role: "user", text: userMsg }])
+    setInputValue("")
+    processUserMessage(userMsg, false)
   }
 
   const startVoiceListening = () => {
@@ -142,14 +154,9 @@ export function ChatbotWidget() {
       if (event.results[0].isFinal) {
          const finalTranscript = event.results[0][0].transcript
          setIsListening(false)
-         setIsVoiceProcessing(true)
-         
-         setTimeout(() => {
-           const answer = getKnowledgeBaseAnswer(finalTranscript)
-           speak(answer)
-           setIsVoiceProcessing(false)
-           setVoiceTranscript(finalTranscript + "\n\nBot: " + answer)
-         }, 800)
+         setVoiceTranscript("") // Clear live buffer
+         setMessages(prev => [...prev, { role: "user", text: finalTranscript }]) // Commit to chat history
+         processUserMessage(finalTranscript, true) // Process unified pipeline
       }
     }
 
@@ -202,7 +209,7 @@ export function ChatbotWidget() {
               <div className="flex items-center gap-1 z-10">
                 {mode !== "select" && (
                     <button 
-                      onClick={() => { setMode("select"); window.speechSynthesis.cancel(); }}
+                      onClick={() => { setMode("select"); window.speechSynthesis.cancel(); setVoiceTranscript(""); setIsListening(false); }}
                       className="text-text-muted hover:text-accent-blue text-xs font-semibold mr-2 uppercase tracking-wide transition-colors"
                     >
                       Back
@@ -250,92 +257,95 @@ export function ChatbotWidget() {
               </motion.div>
             )}
 
-            {/* Mode: Chat UI */}
-            {mode === "chat" && (
-                <>
-                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 scrollbar-thin">
-                    {messages.map((msg, i) => (
-                      <div 
-                        key={i} 
-                        className={cn(
-                          "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
-                          msg.role === "bot" 
-                            ? "bg-bg-surface text-text-primary self-start rounded-tl-sm border border-border"
-                            : "bg-accent-blue text-white self-end rounded-tr-sm shadow-md"
-                        )}
-                      >
-                        {msg.text}
-                      </div>
-                    ))}
-                    {isTyping && (
-                      <div className="bg-bg-surface border border-border self-start rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1">
-                        <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                        <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                        <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce"></div>
-                      </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-
-                  <div className="p-3 bg-bg-surface border-t border-border flex gap-2 shrink-0">
-                    <input
-                      type="text"
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSendText()}
-                      placeholder="Type your message..."
-                      className="flex-1 bg-bg-secondary border border-border rounded-full px-4 text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
-                    />
-                    <button
-                      onClick={handleSendText}
-                      disabled={!inputValue.trim()}
-                      className="bg-accent-blue text-white p-2 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-blue-600 transition-colors focus-ring disabled:hover:bg-accent-blue"
-                      aria-label="Send message"
+            {/* Mode: Shared Chat/Voice Messages Display */}
+            {mode !== "select" && (
+                <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 scrollbar-thin bg-bg-primary">
+                  {messages.map((msg, i) => (
+                    <div 
+                      key={i} 
+                      className={cn(
+                        "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                        msg.role === "bot" 
+                          ? "bg-bg-surface text-text-primary self-start rounded-tl-sm border border-border"
+                          : mode === "chat" 
+                             ? "bg-accent-blue text-white self-end rounded-tr-sm shadow-md"
+                             : "bg-accent-violet text-white self-end rounded-tr-sm shadow-md"
+                      )}
                     >
-                      <Send className="w-4 h-4 ml-0.5" />
-                    </button>
-                  </div>
-                </>
+                      {msg.text}
+                    </div>
+                  ))}
+                  
+                  {/* Live Intermittent Voice Transcript */}
+                  {mode === "voice" && voiceTranscript && voiceTranscript !== "..." && (
+                    <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-accent-violet text-white self-end rounded-tr-sm shadow-md animate-pulse">
+                      {voiceTranscript}
+                    </div>
+                  )}
+
+                  {isTyping && (
+                    <div className="bg-bg-surface border border-border self-start rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1">
+                      <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                      <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                      <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce"></div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
             )}
 
-            {/* Mode: Voice UI */}
+            {/* Input Modes Area */}
+            {mode === "chat" && (
+                <div className="p-3 bg-bg-surface border-t border-border flex gap-2 shrink-0">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendText()}
+                    placeholder="Type your message..."
+                    className="flex-1 bg-bg-secondary border border-border rounded-full px-4 text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
+                  />
+                  <button
+                    onClick={handleSendText}
+                    disabled={!inputValue.trim()}
+                    className="bg-accent-blue text-white p-2 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-blue-600 transition-colors focus-ring disabled:hover:bg-accent-blue"
+                    aria-label="Send message"
+                  >
+                    <Send className="w-4 h-4 ml-0.5" />
+                  </button>
+                </div>
+            )}
+
             {mode === "voice" && (
-               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-6 flex flex-col items-center justify-between relative bg-bg-primary">
-                  <div className="text-center mt-6 h-16 w-full flex items-end justify-center">
+                <div className="p-4 bg-bg-surface border-t border-border flex flex-col items-center justify-center shrink-0">
+                  <div className="text-center mb-3">
                      {isListening ? (
-                        <p className="text-text-primary font-medium animate-pulse text-lg tracking-wide">Listening...</p>
+                        <p className="text-text-primary font-medium animate-pulse text-sm">Listening...</p>
                      ) : isVoiceProcessing ? (
-                        <p className="text-accent-violet font-medium animate-pulse text-lg tracking-wide">Synthesizing...</p>
+                        <p className="text-accent-violet font-medium animate-pulse text-sm">Synthesizing...</p>
                      ) : (
-                        <p className="text-text-secondary text-sm">Tap the microphone to speak</p>
+                        <p className="text-text-secondary text-sm">Tap mic to speak</p>
                      )}
                   </div>
                   
-                  <div className="relative w-40 h-40 flex items-center justify-center my-6">
+                  <div className="relative w-16 h-16 flex items-center justify-center">
                      {(isListening || isVoiceProcessing) && (
                         <>
-                          <div className="absolute inset-0 border-[3px] border-accent-violet rounded-full opacity-60 animate-[ping_2s_ease-in-out_infinite]"></div>
-                          <div className="absolute inset-4 border-[2px] border-accent-blue rounded-full opacity-40 animate-[ping_1.5s_ease-in-out_infinite] [animation-delay:0.3s]"></div>
-                          <div className="absolute inset-0 bg-accent-violet/10 rounded-full blur-xl animate-pulse"></div>
+                          <div className="absolute inset-[-10px] border-[2px] border-accent-violet rounded-full opacity-60 animate-[ping_2s_ease-in-out_infinite]"></div>
+                          <div className="absolute inset-0 bg-accent-violet/10 rounded-full blur-lg animate-pulse"></div>
                         </>
                      )}
                      <button 
                         onClick={startVoiceListening} 
                         className={cn(
-                          "w-24 h-24 rounded-full flex items-center justify-center z-10 transition-all duration-300",
-                          isListening ? "bg-accent-violet shadow-[0_0_30px_rgba(139,92,246,0.6)] scale-110" : "bg-bg-surface border-2 border-border hover:border-accent-violet hover:bg-bg-secondary cursor-pointer"
+                          "w-14 h-14 rounded-full flex items-center justify-center z-10 transition-all duration-300",
+                          isListening ? "bg-accent-violet shadow-[0_0_20px_rgba(139,92,246,0.6)] scale-110" : "bg-bg-secondary border border-border hover:border-accent-violet cursor-pointer"
                         )}
                       >
-                        <Mic className={cn("w-10 h-10", isListening ? "text-white animate-pulse" : "text-accent-violet drop-shadow-[0_0_5px_rgba(139,92,246,0.4)]")} />
+                        <Mic className={cn("w-6 h-6", isListening ? "text-white animate-pulse" : "text-accent-violet")} />
                      </button>
                   </div>
-                  
-                  <div className="w-full flex-1 overflow-y-auto bg-bg-surface border border-border rounded-xl p-4 text-sm scrollbar-thin flex flex-col">
-                     <p className="text-text-primary whitespace-pre-wrap leading-relaxed">
-                        {voiceTranscript || "Wait for the beep, then ask me anything about Veridian AI's products, pricing, or capabilities!"}
-                     </p>
-                  </div>
-               </motion.div>
+                </div>
             )}
 
           </motion.div>
