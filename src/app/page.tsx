@@ -11,30 +11,44 @@ export default function Home() {
   return (
     <>
       {/* 1. HERO SECTION */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-        <ParticleNetwork />
+      <section className="relative min-h-screen flex items-center justify-start pt-20 overflow-hidden">
+        <div className="absolute inset-0 z-0 bg-bg-primary">
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="absolute inset-0 w-full h-full object-cover opacity-100"
+          >
+            <source src="https://www.ellucian.com/files/2025-08/Hero_HomePage_1.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-r from-bg-primary/90 via-bg-primary/50 to-transparent lg:w-2/3"></div>
+          <div className="absolute inset-0 bg-bg-primary/10"></div>
+        </div>
         
-        <div className="container mx-auto px-6 relative z-10 text-center">
-          <Badge variant="glow" className="mb-6">Enterprise-Grade AI Solutions</Badge>
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-text-primary tracking-tight mb-8 max-w-4xl mx-auto leading-tight">
-            Transforming Businesses with <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-blue to-accent-violet">Intelligent AI Systems</span>
-          </h1>
-          <p className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
-            From automation to advanced analytics — we deploy production-ready AI systems that reduce operational costs by up to 60% and deliver ROI within 90 days.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="glow" size="lg" className="h-14 px-8 text-base" href="/contact">
-              Book a Free Demo <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button variant="glass" size="lg" className="h-14 px-8 text-base border-border" href="/solutions">
-              Explore Our Solutions
-            </Button>
+        <div className="w-full px-6 md:px-12 lg:px-24 xl:px-32 relative z-10 text-left">
+          <div className="max-w-3xl">
+            <Badge variant="glow" className="mb-6">Enterprise-Grade AI Solutions</Badge>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-text-primary tracking-tight mb-8 leading-tight">
+              Transforming Businesses with <br className="hidden lg:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-blue to-accent-violet">Intelligent AI Systems</span>
+            </h1>
+            <p className="text-lg md:text-xl text-text-secondary max-w-xl mb-10 leading-relaxed">
+              From automation to advanced analytics — we deploy production-ready AI systems that reduce operational costs by up to 60% and deliver ROI within 90 days.
+            </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <Button variant="glow" size="lg" className="h-14 px-8 text-base" href="/contact">
+                Book a Free Demo <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+              <Button variant="glass" size="lg" className="h-14 px-8 text-base border-border" href="/solutions">
+                Explore Our Solutions
+              </Button>
+            </div>
           </div>
 
-          <div className="mt-20 pt-10 border-t border-border/50 max-w-4xl mx-auto">
-            <p className="text-sm font-medium text-text-muted mb-6 uppercase tracking-widest">Trusted by leaders across 6+ industries</p>
-            <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+          <div className="mt-20 pt-10 border-t border-border/30 max-w-4xl">
+            <p className="text-sm font-medium text-text-muted mb-6 uppercase tracking-widest text-left">Trusted by leaders across 6+ industries</p>
+            <div className="flex flex-wrap justify-start gap-8 md:gap-16 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
               <div className="font-display font-bold text-xl flex items-center gap-2"><Zap className="w-5 h-5"/>EduTech</div>
               <div className="font-display font-bold text-xl flex items-center gap-2"><Activity className="w-5 h-5"/>HealthCorp</div>
               <div className="font-display font-bold text-xl flex items-center gap-2"><Shield className="w-5 h-5"/>SecureLife</div>
