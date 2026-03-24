@@ -49,7 +49,7 @@ export default function Training() {
             <div className="bg-gradient-to-r from-bg-surface to-bg-secondary border border-border rounded-3xl p-10 md:p-16 flex flex-col md:flex-row items-center gap-12 text-center md:text-left">
                <div className="flex-1">
                   <h2 className="text-3xl font-display font-bold text-text-primary mb-4">Custom Corporate Training</h2>
-                  <p className="text-text-secondary text-lg mb-6">Need a specialized curriculum mapping to your organization's tech stack? We build custom learning pathways for teams of 10 or more.</p>
+                  <p className="text-text-secondary text-lg mb-6">Need a specialized curriculum mapping to your organization&apos;s tech stack? We build custom learning pathways for teams of 10 or more.</p>
                   <ul className="space-y-3 mb-8 text-left">
                     <li className="flex items-center justify-center md:justify-start gap-3 text-text-primary"><CheckCircle2 className="text-accent-teal w-5 h-5"/> Certificate of completion from Veridian AI Tech</li>
                     <li className="flex items-center justify-center md:justify-start gap-3 text-text-primary"><CheckCircle2 className="text-accent-teal w-5 h-5"/> NASSCOM / NSDC aligned certification pathways</li>

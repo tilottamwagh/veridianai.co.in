@@ -17,6 +17,7 @@ const navLinks = [
   { name: "Services", href: "/services" },
   { name: "Research", href: "/research" },
   { name: "Pricing", href: "/pricing" },
+  { name: "Demo Dashboard", href: "https://www.tilottamwagh.com/", external: true },
 ]
 
 export function Navbar() {
@@ -64,6 +65,8 @@ export function Navbar() {
             <Link
               key={link.name}
               href={link.href}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noopener noreferrer" : undefined}
               className={cn(
                 "text-sm font-medium transition-colors focus-ring rounded-sm py-1 hover:text-accent-blue",
                 pathname === link.href ? "text-accent-blue" : "text-text-secondary"
@@ -133,6 +136,8 @@ export function Navbar() {
                   >
                     <Link
                       href={link.href}
+                      target={link.external ? "_blank" : undefined}
+                      rel={link.external ? "noopener noreferrer" : undefined}
                       className={cn(
                         "text-2xl font-display font-semibold transition-colors w-full block focus-ring py-2 rounded-md",
                         pathname === link.href ? "text-accent-blue" : "text-text-primary"

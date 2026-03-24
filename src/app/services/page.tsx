@@ -1,6 +1,4 @@
-import Link from "next/link"
-import { ArrowRight, Lightbulb, Settings, Database, Activity, RefreshCw } from "lucide-react"
-
+import { Lightbulb, Settings, Database, Activity, RefreshCw } from "lucide-react"
 import { ScrollReveal } from "@/components/ScrollReveal"
 import { Button } from "@/components/ui/button"
 

@@ -5,12 +5,11 @@ import Link from "next/link";
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement | HTMLAnchorElement> {
   variant?: "default" | "outline" | "ghost" | "glass" | "glow";
   size?: "default" | "sm" | "lg" | "icon";
-  asChild?: boolean;
   href?: string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", asChild, href, ...props }, ref) => {
+  ({ className, variant = "default", size = "default", href, ...props }, ref) => {
     
     const baseClass = "inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-medium transition-all duration-200 focus-ring disabled:pointer-events-none disabled:opacity-50";
     
@@ -33,7 +32,7 @@ const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPro
 
     if (href) {
       return (
-        <Link href={href} className={classes} ref={ref as any} {...(props as any)}>
+        <Link href={href} className={classes} ref={ref as React.Ref<HTMLAnchorElement>} {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>
           {props.children}
         </Link>
       );
@@ -42,8 +41,8 @@ const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPro
     return (
       <button
         className={classes}
-        ref={ref as any}
-        {...(props as any)}
+        ref={ref as React.Ref<HTMLButtonElement>}
+        {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
       />
     );
   }

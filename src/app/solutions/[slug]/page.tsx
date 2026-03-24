@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Factory, Stethoscope, Building, ShieldAlert, ShoppingBag, GraduationCap } from "lucide-react"
+import { ArrowRight, CheckCircle2, Stethoscope, Building, ShieldAlert, ShoppingBag, GraduationCap } from "lucide-react"
 
 import { ScrollReveal } from "@/components/ScrollReveal"
 import { Button } from "@/components/ui/button"
@@ -122,7 +122,7 @@ export default function IndustryPage({ params }: { params: { slug: string } }) {
           <ScrollReveal delay={0.2}>
             <div className="bg-gradient-to-br from-bg-primary to-bg-surface p-10 rounded-3xl border border-border border-l-4 border-l-accent-violet h-full flex flex-col justify-center shadow-lg transition-transform hover:scale-[1.02]">
                <h4 className="text-accent-violet font-bold tracking-wider uppercase text-sm mb-4 flex items-center gap-2"><ArrowRight className="w-4 h-4"/> Certified Impact Showcase</h4>
-               <p className="text-2xl md:text-3xl font-display text-text-primary leading-relaxed mb-8">"{data.caseStudy}"</p>
+               <p className="text-2xl md:text-3xl font-display text-text-primary leading-relaxed mb-8">&quot;{data.caseStudy}&quot;</p>
                <Button variant="outline" href="/contact" className="w-fit">Read Full Technical Case Study</Button>
             </div>
           </ScrollReveal>

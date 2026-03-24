@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { MessageSquare, X, Send, Bot } from "lucide-react"
+import { X, Send, Bot, MessageSquare, Mic } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 export function ChatbotWidget() {
   const [isOpen, setIsOpen] = React.useState(false)
+  const [mode, setMode] = React.useState<"select" | "chat" | "voice">("select")
   const [messages, setMessages] = React.useState<{role: "user" | "bot", text: string}[]>([
     { role: "bot", text: "Hi! I'm VeriBot. I can help you find case studies, book a demo, or explain our platform features. What would you like to know?" }
   ])
@@ -16,53 +17,71 @@ export function ChatbotWidget() {
   const [pendingAnswer, setPendingAnswer] = React.useState<string | null>(null)
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
 
+  // Voice States
+  const [isListening, setIsListening] = React.useState(false)
+  const [voiceTranscript, setVoiceTranscript] = React.useState("")
+  const [synthVoice, setSynthVoice] = React.useState<SpeechSynthesisVoice | null>(null)
+  const [isVoiceProcessing, setIsVoiceProcessing] = React.useState(false)
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   React.useEffect(() => {
-    scrollToBottom()
-  }, [messages, isTyping])
+    if (mode === "chat") scrollToBottom()
+  }, [messages, isTyping, mode])
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      const loadVoices = () => {
+        const voices = window.speechSynthesis.getVoices()
+        const femaleVoice = voices.find(v => 
+          v.name.includes("Female") || 
+          v.name.includes("Samantha") || 
+          v.name.includes("Zira") ||
+          v.name.includes("Victoria") ||
+          v.name.includes("Karen")
+        ) || voices.find(v => v.lang.startsWith("en-")) || voices[0]
+        setSynthVoice(femaleVoice || null)
+      }
+      loadVoices()
+      window.speechSynthesis.onvoiceschanged = loadVoices
+    }
+  }, [])
+
+  const speak = (text: string) => {
+    if (!("speechSynthesis" in window)) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    if (synthVoice) utterance.voice = synthVoice
+    utterance.pitch = 1.15 // Slightly higher pitch for female sweetness
+    utterance.rate = 1.05
+    window.speechSynthesis.speak(utterance)
+  }
 
   const getKnowledgeBaseAnswer = (userMsg: string) => {
     const lower = userMsg.toLowerCase()
-    if (lower.includes("pricing") || lower.includes("cost") || lower.includes("price")) {
-      return "Our SaaS platforms like VeriChat start at ₹4,999/mo. For dedicated enterprise models, our project pricing starts around ₹8L. Shall I direct you to our pricing page or connect you with sales?"
-    } else if (lower.includes("case study") || lower.includes("example") || lower.includes("clients")) {
-      return "We've helped a leading NBFC reduce KYC time by 80% using VeriVision, and enabled a Fortune 500 retailer to forecast demand with 94% accuracy, saving $2.1M annually."
-    } else if (lower.includes("industry") || lower.includes("industries") || lower.includes("sector")) {
-      return "We deploy enterprise AI architectures primarily for Healthcare, Finance, Education, Retail, and Security. You can explore these on our Solutions page."
-    } else if (lower.includes("demo") || lower.includes("book") || lower.includes("contact")) {
-      return "Excellent! You can schedule a live technical demo or reach out to our team via the 'Contact' page in the top navigation."
-    } else if (lower.includes("accuracy") || lower.includes("accurate") || lower.includes("performance") || lower.includes("metric")) {
-      return "Our models are engineered for scale. We typically achieve 96.2% transcription accuracy for voice, and 99.1% defect detection for CV systems."
-    } else if (lower.includes("stack") || lower.includes("tech") || lower.includes("technology")) {
-      return "Our models are trained using PyTorch and TensorFlow, and we deploy via Kubernetes and Docker. The API layer is powered by high-performance Node.js and Go microservices."
-    } else if (lower.includes("security") || lower.includes("privacy") || lower.includes("safe")) {
-      return "Security is our priority. We are ISO 27001 certified. We offer on-premise deployments or secured VPCs, ensuring your enterprise data never leaks."
-    } else if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
-      return "Hello there! How can I assist you with Veridian AI Tech today?"
-    } else if (lower.includes("verichat") || lower.includes("chatbot")) {
-      return "VeriChat is our intelligent virtual assistant platform. It's trained entirely on your own company data and can integrate into web, WhatsApp, and Telegram in under 2 weeks."
-    } else if (lower.includes("verivision") || lower.includes("vision") || lower.includes("camera") || lower.includes("image")) {
-      return "VeriVision is our Computer Vision platform designed for real-time defect detection, crowd analytics, and spatial mapping at the edge."
-    } else if (lower.includes("verivoice") || lower.includes("voice") || lower.includes("audio")) {
-      return "VeriVoice provides sub-300ms speech-to-text with advanced speaker diarization—perfect for replacing traditional IVR systems with intent-driven conversations."
-    } else if (lower.includes("service") || lower.includes("consulting")) {
-      return "We offer end-to-end AI consulting: from 4-week Discovery Sprints to ongoing retainers and dedicated engineering teams. Which model fits your needs?"
-    } else if (lower.includes("about") || lower.includes("company") || lower.includes("who")) {
-      return "Veridian AI Tech is a premier AI engineering firm founded in 2021 in Pune. Our mission is to build explainable and highly accurate AI systems for enterprises."
-    } else if (lower.includes("time") || lower.includes("how long")) {
-      return "We focus on rapid, measurable outcomes. Most of our custom enterprise solutions are deployed and creating measurable value within 90 days."
-    } else if (lower.includes("thank")) {
-      return "You're very welcome! Let me know if you need anything else."
-    }
+    if (lower.includes("pricing") || lower.includes("cost") || lower.includes("price")) return "Our SaaS platforms like VeriChat start at 4,999 rupees per month. For dedicated enterprise models, our project pricing starts around 8 Lakhs. Shall I direct you to our pricing page or connect you with sales?"
+    if (lower.includes("case study") || lower.includes("example") || lower.includes("clients")) return "We've helped a leading NBFC reduce KYC time by 80% using VeriVision, and enabled a Fortune 500 retailer to forecast demand with 94% accuracy, saving 2.1 million dollars annually."
+    if (lower.includes("industry") || lower.includes("industries") || lower.includes("sector")) return "We deploy enterprise AI architectures primarily for Healthcare, Finance, Education, Retail, and Security. You can explore these on our Solutions page."
+    if (lower.includes("demo") || lower.includes("book") || lower.includes("contact")) return "Excellent! You can schedule a live technical demo or reach out to our team via the 'Contact' page in the top navigation."
+    if (lower.includes("accuracy") || lower.includes("accurate") || lower.includes("performance") || lower.includes("metric")) return "Our models are engineered for scale. We typically achieve 96.2% transcription accuracy for voice, and 99.1% defect detection for Computer Vision systems."
+    if (lower.includes("stack") || lower.includes("tech") || lower.includes("technology")) return "Our models are trained using PyTorch and TensorFlow, and we deploy via Kubernetes and Docker. The API layer is powered by high-performance microservices."
+    if (lower.includes("security") || lower.includes("privacy") || lower.includes("safe")) return "Security is our absolute priority. We are ISO 27001 certified. We offer on-premise deployments or secured VPCs, ensuring your enterprise data never leaks."
+    if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) return "Hello there! I am VeriBot, your AI Assistant. How can I help you today?"
+    if (lower.includes("verichat") || lower.includes("chatbot")) return "VeriChat is our intelligent virtual assistant platform. It's trained entirely on your own company data and can integrate into web, WhatsApp, and Telegram in under 2 weeks."
+    if (lower.includes("verivision") || lower.includes("vision") || lower.includes("camera") || lower.includes("image")) return "VeriVision is our Computer Vision platform designed for real-time defect detection, crowd analytics, and spatial mapping at the edge."
+    if (lower.includes("verivoice") || lower.includes("voice") || lower.includes("audio")) return "VeriVoice provides sub-300ms speech-to-text with advanced speaker diarization, perfect for replacing traditional IVR systems with intent-driven conversations."
+    if (lower.includes("service") || lower.includes("consulting")) return "We offer end-to-end AI consulting: from 4-week Discovery Sprints to ongoing retainers and dedicated engineering teams. Which model fits your needs?"
+    if (lower.includes("about") || lower.includes("company") || lower.includes("who")) return "Veridian AI Tech is a premier AI engineering firm founded in 2021 in Pune. Our mission is to build explainable and highly accurate AI systems for enterprises."
+    if (lower.includes("time") || lower.includes("how long")) return "We focus on rapid, measurable outcomes. Most of our custom enterprise solutions are deployed and creating measurable value within 90 days."
+    if (lower.includes("thank")) return "You are very welcome! Let me know if you need anything else."
+    
     return "I understand. To give you the most accurate technical information, could you elaborate on your team's specific requirements?"
   }
 
-  const handleSend = () => {
+  const handleSendText = () => {
     if (!inputValue.trim()) return
-
     const userMsg = inputValue.trim()
     setMessages(prev => [...prev, { role: "user", text: userMsg }])
     setInputValue("")
@@ -95,6 +114,58 @@ export function ChatbotWidget() {
     }, 1000)
   }
 
+  const startVoiceListening = () => {
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      alert("Voice features are not supported in this browser. Please use Chrome or Edge.")
+      return
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    const recognition = new SpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = true
+
+    window.speechSynthesis.cancel() // Stop speaking if the user interrupts
+
+    recognition.onstart = () => {
+      setIsListening(true)
+      setVoiceTranscript("...")
+    }
+
+    recognition.onresult = (event: any) => {
+      let current = ""
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        current += event.results[i][0].transcript
+      }
+      setVoiceTranscript(current)
+      
+      if (event.results[0].isFinal) {
+         const finalTranscript = event.results[0][0].transcript
+         setIsListening(false)
+         setIsVoiceProcessing(true)
+         
+         setTimeout(() => {
+           const answer = getKnowledgeBaseAnswer(finalTranscript)
+           speak(answer)
+           setIsVoiceProcessing(false)
+           setVoiceTranscript(finalTranscript + "\n\nBot: " + answer)
+         }, 800)
+      }
+    }
+
+    recognition.onerror = () => {
+      setIsListening(false)
+      setIsVoiceProcessing(false)
+      setVoiceTranscript("Microphone error. Tap to try again.")
+    }
+
+    recognition.onend = () => {
+      setIsListening(false)
+    }
+
+    recognition.start()
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <AnimatePresence>
@@ -109,7 +180,7 @@ export function ChatbotWidget() {
             aria-label="Chat with VeriBot"
           >
             {/* Header */}
-            <div className="bg-bg-surface border-b border-border p-4 flex items-center justify-between relative overflow-hidden">
+            <div className="bg-bg-surface border-b border-border p-4 flex items-center justify-between relative overflow-hidden shrink-0">
               <div className="absolute inset-0 bg-gradient-to-r from-accent-blue/10 to-transparent pointer-events-none"></div>
               <div className="flex items-center gap-3 relative z-10">
                 <div className="relative">
@@ -128,59 +199,145 @@ export function ChatbotWidget() {
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="text-text-muted hover:text-text-primary transition-colors focus-ring rounded-sm p-1"
-                aria-label="Close chat"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 scrollbar-thin">
-              {messages.map((msg, i) => (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
-                    msg.role === "bot" 
-                      ? "bg-bg-surface text-text-primary self-start rounded-tl-sm"
-                      : "bg-accent-blue text-white self-end rounded-tr-sm"
-                  )}
+              <div className="flex items-center gap-1 z-10">
+                {mode !== "select" && (
+                    <button 
+                      onClick={() => { setMode("select"); window.speechSynthesis.cancel(); }}
+                      className="text-text-muted hover:text-accent-blue text-xs font-semibold mr-2 uppercase tracking-wide transition-colors"
+                    >
+                      Back
+                    </button>
+                )}
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  className="text-text-muted hover:text-text-primary transition-colors focus-ring rounded-sm p-1"
+                  aria-label="Close chat"
                 >
-                  {msg.text}
-                </div>
-              ))}
-              {isTyping && (
-                <div className="bg-bg-surface self-start rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1">
-                  <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce"></div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* Input */}
-            <div className="p-3 bg-bg-surface border-t border-border flex gap-2">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Type your message..."
-                className="flex-1 bg-bg-secondary border border-border rounded-full px-4 text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
-              />
-              <button
-                onClick={handleSend}
-                disabled={!inputValue.trim()}
-                className="bg-accent-blue text-white p-2 rounded-full disabled:opacity-50 hover:bg-blue-600 transition-colors focus-ring disabled:hover:bg-accent-blue"
-                aria-label="Send message"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
+            {/* Mode: Selection Screen */}
+            {mode === "select" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-6 flex flex-col justify-center items-center gap-4 bg-gradient-to-b from-bg-secondary to-bg-primary">
+                 <div className="w-20 h-20 bg-accent-blue/10 rounded-full flex items-center justify-center mb-2 shadow-inner">
+                   <Bot className="w-10 h-10 text-accent-blue drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+                 </div>
+                 <h4 className="text-xl font-display font-semibold text-text-primary text-center mb-2">How would you like to connect?</h4>
+                 
+                 <button onClick={() => setMode("chat")} className="w-full flex items-center justify-start gap-4 p-4 bg-bg-surface border border-border rounded-xl hover:border-accent-blue hover:shadow-glow transition-all group overflow-hidden relative">
+                    <div className="absolute inset-0 bg-accent-blue/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="bg-bg-primary p-2 flex items-center justify-center rounded-lg border border-border group-hover:border-accent-blue/30 z-10">
+                       <MessageSquare className="w-5 h-5 text-accent-blue group-hover:scale-110 transition-transform" />
+                    </div>
+                    <div className="flex flex-col text-left z-10">
+                       <span className="font-semibold text-text-primary">Text Chat</span>
+                       <span className="text-xs text-text-muted">Classic messaging agent</span>
+                    </div>
+                 </button>
+
+                 <button onClick={() => { setMode("voice"); setVoiceTranscript(""); speak("System connected. I am VeriBot, your AI Assistant. How can I help you today?"); }} className="w-full flex items-center justify-start gap-4 p-4 bg-bg-surface border border-border rounded-xl hover:border-accent-violet hover:shadow-[0_0_15px_rgba(139,92,246,0.2)] transition-all group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-accent-violet/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="bg-bg-primary p-2 flex items-center justify-center rounded-lg border border-border group-hover:border-accent-violet/30 z-10">
+                       <Mic className="w-5 h-5 text-accent-violet group-hover:scale-110 transition-transform" />
+                    </div>
+                    <div className="flex flex-col text-left z-10">
+                       <span className="font-semibold text-text-primary">Voice Agent</span>
+                       <span className="text-xs text-text-muted">Speak naturally with AI</span>
+                    </div>
+                 </button>
+              </motion.div>
+            )}
+
+            {/* Mode: Chat UI */}
+            {mode === "chat" && (
+                <>
+                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 scrollbar-thin">
+                    {messages.map((msg, i) => (
+                      <div 
+                        key={i} 
+                        className={cn(
+                          "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                          msg.role === "bot" 
+                            ? "bg-bg-surface text-text-primary self-start rounded-tl-sm border border-border"
+                            : "bg-accent-blue text-white self-end rounded-tr-sm shadow-md"
+                        )}
+                      >
+                        {msg.text}
+                      </div>
+                    ))}
+                    {isTyping && (
+                      <div className="bg-bg-surface border border-border self-start rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1">
+                        <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-2 h-2 bg-text-muted rounded-full animate-bounce"></div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  <div className="p-3 bg-bg-surface border-t border-border flex gap-2 shrink-0">
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendText()}
+                      placeholder="Type your message..."
+                      className="flex-1 bg-bg-secondary border border-border rounded-full px-4 text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
+                    />
+                    <button
+                      onClick={handleSendText}
+                      disabled={!inputValue.trim()}
+                      className="bg-accent-blue text-white p-2 rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-blue-600 transition-colors focus-ring disabled:hover:bg-accent-blue"
+                      aria-label="Send message"
+                    >
+                      <Send className="w-4 h-4 ml-0.5" />
+                    </button>
+                  </div>
+                </>
+            )}
+
+            {/* Mode: Voice UI */}
+            {mode === "voice" && (
+               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 p-6 flex flex-col items-center justify-between relative bg-bg-primary">
+                  <div className="text-center mt-6 h-16 w-full flex items-end justify-center">
+                     {isListening ? (
+                        <p className="text-text-primary font-medium animate-pulse text-lg tracking-wide">Listening...</p>
+                     ) : isVoiceProcessing ? (
+                        <p className="text-accent-violet font-medium animate-pulse text-lg tracking-wide">Synthesizing...</p>
+                     ) : (
+                        <p className="text-text-secondary text-sm">Tap the microphone to speak</p>
+                     )}
+                  </div>
+                  
+                  <div className="relative w-40 h-40 flex items-center justify-center my-6">
+                     {(isListening || isVoiceProcessing) && (
+                        <>
+                          <div className="absolute inset-0 border-[3px] border-accent-violet rounded-full opacity-60 animate-[ping_2s_ease-in-out_infinite]"></div>
+                          <div className="absolute inset-4 border-[2px] border-accent-blue rounded-full opacity-40 animate-[ping_1.5s_ease-in-out_infinite] [animation-delay:0.3s]"></div>
+                          <div className="absolute inset-0 bg-accent-violet/10 rounded-full blur-xl animate-pulse"></div>
+                        </>
+                     )}
+                     <button 
+                        onClick={startVoiceListening} 
+                        className={cn(
+                          "w-24 h-24 rounded-full flex items-center justify-center z-10 transition-all duration-300",
+                          isListening ? "bg-accent-violet shadow-[0_0_30px_rgba(139,92,246,0.6)] scale-110" : "bg-bg-surface border-2 border-border hover:border-accent-violet hover:bg-bg-secondary cursor-pointer"
+                        )}
+                      >
+                        <Mic className={cn("w-10 h-10", isListening ? "text-white animate-pulse" : "text-accent-violet drop-shadow-[0_0_5px_rgba(139,92,246,0.4)]")} />
+                     </button>
+                  </div>
+                  
+                  <div className="w-full flex-1 overflow-y-auto bg-bg-surface border border-border rounded-xl p-4 text-sm scrollbar-thin flex flex-col">
+                     <p className="text-text-primary whitespace-pre-wrap leading-relaxed">
+                        {voiceTranscript || "Wait for the beep, then ask me anything about Veridian AI's products, pricing, or capabilities!"}
+                     </p>
+                  </div>
+               </motion.div>
+            )}
+
           </motion.div>
         )}
       </AnimatePresence>

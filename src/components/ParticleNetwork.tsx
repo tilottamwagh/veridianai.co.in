@@ -12,19 +12,6 @@ export function ParticleNetwork() {
     if (!ctx) return
 
     let animationFrameId: number
-    const particles: any[] = []
-    const particleCount = 70
-    
-    // Check for reduced motion
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (mediaQuery.matches) return // Don't animate
-
-    const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    window.addEventListener("resize", resize)
-    resize()
 
     class Particle {
       x: number
@@ -57,6 +44,20 @@ export function ParticleNetwork() {
         ctx.fill()
       }
     }
+
+    const particles: Particle[] = []
+    const particleCount = 70
+    
+    // Check for reduced motion
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (mediaQuery.matches) return // Don't animate
+
+    const resize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    window.addEventListener("resize", resize)
+    resize()
 
     for (let i = 0; i < particleCount; i++) {
         particles.push(new Particle())

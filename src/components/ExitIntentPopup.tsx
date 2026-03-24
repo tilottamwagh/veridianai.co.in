@@ -108,7 +108,7 @@ export function ExitIntentPopup() {
                     </svg>
                   </div>
                   <h2 className="text-2xl font-display font-bold text-text-primary mb-2">Request Received</h2>
-                  <p className="text-text-secondary">We'll send the readiness report to your email shortly.</p>
+                  <p className="text-text-secondary">We&apos;ll send the readiness report to your email shortly.</p>
                 </div>
               )}
             </div>

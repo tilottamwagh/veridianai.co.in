@@ -27,7 +27,7 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [success, setSuccess] = React.useState(false)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ContactFormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
   })
 
@@ -35,12 +35,19 @@ export default function Contact() {
     setIsSubmitting(true)
     
     try {
-      // Simulate API call to /api/contact
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      // await fetch("/api/contact", { method: "POST", body: JSON.stringify(data) })
-      setSuccess(true)
+      const response = await fetch("/api/contact", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data) 
+      })
+      
+      if (response.ok) {
+        setSuccess(true)
+      } else {
+        console.error("Form submission failed")
+      }
     } catch (e) {
-      console.error(e)
+      console.error("Network error during submission:", e)
     } finally {
       setIsSubmitting(false)
     }
@@ -128,7 +135,10 @@ export default function Contact() {
                   <p className="text-text-secondary max-w-md">
                     Thank you for reaching out to Veridian AI Tech. One of our specialists will be in touch with you within 1 business day.
                   </p>
-                  <Button variant="outline" className="mt-8" onClick={() => setSuccess(false)}>
+                  <Button variant="outline" className="mt-8" onClick={() => {
+                    setSuccess(false);
+                    reset();
+                  }}>
                     Send Another Message
                   </Button>
                 </div>
